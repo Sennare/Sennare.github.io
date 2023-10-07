@@ -1,10 +1,7 @@
 import { LitElement, PropertyValueMap, css, html } from 'lit';
 import { customElement, state, query } from 'lit/decorators.js';
-
-interface TeamMember {
-  name: string;
-  weight: number;
-}
+import { TeamMember } from '../models/TeamMember';
+import { trovaSottolistaProssimaSomma } from '../utils';
 
 @customElement('my-core')
 export class MyCore extends LitElement {
@@ -51,8 +48,11 @@ export class MyCore extends LitElement {
     }
   `;
 
-  @query('form')
+  @query('form#add-form')
   $form: HTMLFormElement;
+
+  @query('form#calculate-form')
+  $calcForm: HTMLFormElement;
 
   @state()
   private team1: TeamMember[] = [];
@@ -66,7 +66,7 @@ export class MyCore extends LitElement {
       <p>Benvenuto al'organizzatore per il tiro alla fune!</p>
       <div>
         <p>Aggiungi un giocatore:</p>
-        <form class="add-form">
+        <form class="add-form" id="add-form">
           <input type="text" name="name" placeholder="Inserisci il nome">
           <input type="number" name="weight" placeholder="Inserisci il peso">
           <button type="submit" @click=${this.addMember} class="full-row">Aggiungi</button>
@@ -74,7 +74,14 @@ export class MyCore extends LitElement {
       </div>
       <div class="member">${this.team1.length > 0 ? this.buildTeamMemberTable(this.team1, true) : html`<i>Aggiungi qualcuno</i>`}</div>
 
-      <button type="submit" style="width:100%" @click=${this.calculate}>Calcola</button>
+      <div>
+        <p>Indica quanti elementi vuoi nel sottogruppo e a quale peso totale devono avvicinarsi:</p>
+        <form class="add-form" id="calculate-form">
+          <input type="number" name="componentsCount" placeholder="Inserisci il numero di componenti">
+          <input type="number" name="targetWeight" placeholder="Inserisci il peso totale da raggiungere">
+          <button type="submit" @click=${this.calculate} class="full-row">Calcola</button>
+        </form>
+      </div>
       <div class="member non-deletable">${this.solution.length > 0 ? this.buildTeamMemberTable(this.solution, false) : html`<i>Calcola</i>`}</div>
     </div>
     `;
@@ -123,39 +130,17 @@ export class MyCore extends LitElement {
     }
   }
 
-  private calculate() {
-    const m: number = 3;
-    const y: number = 45;
+  private calculate(event: Event) {
+    event.preventDefault();
+    const componentsCount = this.$calcForm.elements.namedItem("componentsCount");
+    const targetWeight = this.$calcForm.elements.namedItem("targetWeight");
+    if ("value" in componentsCount
+      && "value" in targetWeight) {
+      const m: number = +componentsCount.value;
+      const y: number = +targetWeight.value;
 
-    this.solution = this.trovaSottolistaProssimaSomma(this.team1, m, y);
-  }
-
-  private trovaSottolistaProssimaSomma(lista: TeamMember[], m: number, y: number): TeamMember[] {
-    let miglioreSomma = 0;
-    let miglioreSottolista: TeamMember[] = [];
-
-    function combinazioni(arr: TeamMember[], n: number, callback: (combo: TeamMember[]) => void, combo: TeamMember[] = [], startIndex: number = 0): void {
-      if (combo.length === n) {
-        callback(combo);
-        return;
-      }
-
-      for (let i = startIndex; i < arr.length; i++) {
-        combo.push(arr[i]);
-        combinazioni(arr, n, callback, combo, i + 1);
-        combo.pop();
-      }
+      this.solution = trovaSottolistaProssimaSomma(this.team1, m, y);
     }
-
-    combinazioni(lista, m, (combinazione) => {
-      const sommaCombinazione = combinazione.reduce((acc, val) => acc + val.weight, 0);
-      if (Math.abs(sommaCombinazione - y) < Math.abs(miglioreSomma - y)) {
-        miglioreSomma = sommaCombinazione;
-        miglioreSottolista = [...combinazione];
-      }
-    });
-
-    return miglioreSottolista;
   }
 
 }

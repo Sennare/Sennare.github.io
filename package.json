@@ -9,7 +9,6 @@
   },
   "keywords": [],
   "author": "Elia Rebellato",
-  "license": "MIT",
   "devDependencies": {
     "ts-loader": "^9.4.4",
     "typescript": "^5.2.2",
